@@ -12,7 +12,14 @@ class VisionPolicy(object):
     self.net = VisionNet(num_classes=action_space.n)
     self.net = self.net.float().cuda(self.gpu_index)
 
-  def compute_actions(self, observations):
+  def compute_logprob(self, observations):
     input = torch.from_numpy(observations).type(torch.FloatTensor).cuda(self.gpu_index)
-    logprob = self.net.forward(autograd.Variable(input))
-    return F.softmax(logprob).multinomial().cpu().data.numpy()
+    return self.net.forward(autograd.Variable(input))
+
+  def compute_actions(self, observations):
+    logprob = self.compute_logprob(observations)
+    return F.softmax(logprob).multinomial().cpu().data.numpy(), logprob.cpu().data.numpy()
+
+  def compute_loss(self, trajectory):
+    logprobs = self.compute_logprob(trajectory["observations"])
+    return torch.exp(logprobs - autograd.Variable(torch.from_numpy(trajectory["logprobs"]).cuda())) * torch.from_numpy(trajectory["advantages"]).cuda()

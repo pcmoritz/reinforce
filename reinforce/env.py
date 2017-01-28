@@ -31,4 +31,4 @@ class BatchedEnv(object):
       observations.append(self.preprocessor(observation))
       rewards.append(reward)
       dones.append(done)
-    return np.vstack(observations), np.array(rewards), np.array(dones)
+    return np.vstack(observations), np.array(rewards, dtype="float32"), np.array(dones)
