@@ -5,7 +5,7 @@ import numpy as np
 # observation_space in the environment.
 def atari_preprocessor(observation):
   "Convert images from (210, 160, 3) to (3, 80, 80) by downsampling."
-  return observation[25:-25:2,::2,:][None]
+  return (observation[25:-25:2,::2,:][None] - 128.0) / 128.8
 
 # TODO(pcm): Make this a Ray actor.
 class BatchedEnv(object):

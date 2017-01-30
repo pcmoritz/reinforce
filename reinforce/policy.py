@@ -15,13 +15,18 @@ class VisionPolicy(object):
     self.curr_logits = vision_net(self.observations, num_classes=action_space.n)
     self.curr_dist = Categorical(self.curr_logits)
     self.sampler = self.curr_dist.sample()
+    self.entropy = self.curr_dist.entropy()
+    tf.summary.scalar("policy entropy", tf.reduce_mean(self.entropy))
     # Make loss functions.
     self.ratio = tf.exp(self.curr_dist.logp(self.actions) - self.prev_dist.logp(self.actions))
-    self.loss = self.ratio * self.advantages
+    self.kl = self.prev_dist.kl(self.curr_dist)
+    # XXX
+    self.loss = tf.reduce_mean(-self.ratio * self.advantages + 1e-3 * self.kl)
+    tf.summary.scalar("loss", self.loss)
     self.sess = sess
 
   def compute_actions(self, observations):
-    return self.sess.run(self.sampler, feed_dict={self.observations: observations})
+    return self.sess.run([self.sampler, self.curr_logits], feed_dict={self.observations: observations})
 
   def loss(self):
     return self.loss
