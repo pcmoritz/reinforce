@@ -13,11 +13,11 @@ def rollout(policy, env, max_timesteps, stochastic=True):
 
   while not done.any() and t < max_timesteps:
     action, logprob = policy.compute_actions(observation)
-    observations.append(observation)
-    actions.append(action)
-    logprobs.append(logprob)
+    observations.append(observation[None])
+    actions.append(action[None])
+    logprobs.append(logprob[None])
     observation, reward, done = env.step(action)
-    rewards.append(reward)
+    rewards.append(reward[None])
     t += 1
 
   return {"observations": np.vstack(observations),

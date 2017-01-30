@@ -1,25 +1,33 @@
 import gym.spaces
-import torch
-import torch.autograd as autograd
-import torch.nn.functional as F
-from reinforce.models.visionnet import VisionNet
+import tensorflow as tf
+from reinforce.models.visionnet import vision_net
+from reinforce.distributions import Categorical
 
 class VisionPolicy(object):
 
-  def __init__(self, observation_space, action_space, gpu_index=0):
+  def __init__(self, observation_space, action_space, sess):
     assert isinstance(action_space, gym.spaces.Discrete)
-    self.gpu_index = gpu_index
-    self.net = VisionNet(num_classes=action_space.n)
-    self.net = self.net.float().cuda(self.gpu_index)
-
-  def compute_logprob(self, observations):
-    input = torch.from_numpy(observations).type(torch.FloatTensor).cuda(self.gpu_index)
-    return self.net.forward(autograd.Variable(input))
+    self.observations = tf.placeholder(tf.float32, shape=(None, 80, 80, 3))
+    self.advantages = tf.placeholder(tf.float32, shape=(None,))
+    self.actions = tf.placeholder(tf.int64, shape=(None,))
+    self.prev_logits = tf.placeholder(tf.float32, shape=(None, action_space.n))
+    self.prev_dist = Categorical(self.prev_logits)
+    self.curr_logits = vision_net(self.observations, num_classes=action_space.n)
+    self.curr_dist = Categorical(self.curr_logits)
+    self.sampler = self.curr_dist.sample()
+    # Make loss functions.
+    self.ratio = tf.exp(self.curr_dist.logp(self.actions) - self.prev_dist.logp(self.actions))
+    self.loss = self.ratio * self.advantages
+    self.sess = sess
 
   def compute_actions(self, observations):
-    logprob = self.compute_logprob(observations)
-    return F.softmax(logprob).multinomial().cpu().data.numpy(), logprob.cpu().data.numpy()
+    return self.sess.run(self.sampler, feed_dict={self.observations: observations})
 
-  def compute_loss(self, trajectory):
-    logprobs = self.compute_logprob(trajectory["observations"])
-    return torch.exp(logprobs - autograd.Variable(torch.from_numpy(trajectory["logprobs"]).cuda())) * torch.from_numpy(trajectory["advantages"]).cuda()
+  def loss(self):
+    return self.loss
+
+  def compute_loss(self, observations, advantages, actions, prev_logits):
+    return self.sess.run(self.loss, feed_dict={self.observations: observations,
+                                               self.advantages: advantages,
+                                               self.actions: actions,
+                                               self.prev_logits: prev_logits})

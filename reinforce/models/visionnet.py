@@ -1,22 +1,9 @@
-import torch.nn as nn
+import tensorflow as tf
+import tensorflow.contrib.slim as slim
 
-class VisionNet(nn.Module):
-  def __init__(self, num_classes=10):
-    super(VisionNet, self).__init__()
-    self.features = nn.Sequential(
-      nn.Conv2d(3, 16, kernel_size=8, stride=4),
-      nn.ReLU(inplace=True),
-      nn.Conv2d(16, 32, kernel_size=4, stride=2),
-      nn.ReLU(inplace=True),
-    )
-    self.classifier = nn.Sequential(
-      nn.Linear(32 * 8 * 8, 512),
-      nn.ReLU(inplace=True),
-      nn.Linear(512, num_classes),
-    )
-
-  def forward(self, x):
-    x = self.features(x)
-    x = x.view(x.size(0), 32 * 8 * 8)
-    x = self.classifier(x)
-    return x
+def vision_net(inputs, num_classes=10):
+  conv1 = slim.conv2d(inputs, 16, [8, 8], 4, scope="conv1")
+  conv2 = slim.conv2d(conv1, 32, [4, 4], 2, scope="conv2")
+  fc1 = slim.conv2d(conv2, 512, [10, 10], padding="VALID", scope="fc1")
+  fc2 = slim.conv2d(fc1, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope="fc2")
+  return tf.squeeze(fc2, [1, 2])
