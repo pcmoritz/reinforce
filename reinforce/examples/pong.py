@@ -27,4 +27,4 @@ for j in range(20):
                                                            policy.actions: trajectory["actions"].squeeze(),
                                                            policy.prev_logits: trajectory["logprobs"]})
     print("loss = ", loss)
-  print "kl diff = ", policy.compute_kl(trajectory["logprobs"])
+  print("kl diff = ", policy.compute_kl(trajectory["observations"], trajectory["logprobs"]))
