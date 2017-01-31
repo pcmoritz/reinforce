@@ -36,3 +36,7 @@ class VisionPolicy(object):
                                                self.advantages: advantages,
                                                self.actions: actions,
                                                self.prev_logits: prev_logits})
+
+  def compute_kl(self, prev_logits):
+    return self.sess.run(tf.reduce_mean(self.kl), feed_dict={self.observations: observations,
+                                                             self.prev_logits: pref_logits})
