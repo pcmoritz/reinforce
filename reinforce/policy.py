@@ -21,7 +21,7 @@ class VisionPolicy(object):
     self.ratio = tf.exp(self.curr_dist.logp(self.actions) - self.prev_dist.logp(self.actions))
     self.kl = self.prev_dist.kl(self.curr_dist)
     # XXX
-    self.loss = tf.reduce_mean(-self.ratio * self.advantages + 1e-3 * self.kl)
+    self.loss = tf.reduce_mean(-self.ratio * self.advantages + 1e-4 * self.kl)
     tf.summary.scalar("loss", self.loss)
     self.sess = sess
 
