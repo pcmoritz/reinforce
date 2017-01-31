@@ -4,9 +4,11 @@ from reinforce.policy import VisionPolicy
 from reinforce.rollout import rollout, add_advantage_values
 from reinforce.utils import flatten
 
+config = {"klcoeff": 0.1}
+
 env = BatchedEnv("Pong-v3", 16, preprocessor=atari_preprocessor)
 sess = tf.Session()
-policy = VisionPolicy(env.observation_space, env.action_space, sess)
+policy = VisionPolicy(env.observation_space, env.action_space, config, sess)
 
 optimizer = tf.train.AdamOptimizer(1e-4)
 

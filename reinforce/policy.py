@@ -5,7 +5,7 @@ from reinforce.distributions import Categorical
 
 class VisionPolicy(object):
 
-  def __init__(self, observation_space, action_space, sess):
+  def __init__(self, observation_space, action_space, config, sess):
     assert isinstance(action_space, gym.spaces.Discrete)
     self.observations = tf.placeholder(tf.float32, shape=(None, 80, 80, 3))
     self.advantages = tf.placeholder(tf.float32, shape=(None,))
@@ -21,7 +21,7 @@ class VisionPolicy(object):
     self.ratio = tf.exp(self.curr_dist.logp(self.actions) - self.prev_dist.logp(self.actions))
     self.kl = self.prev_dist.kl(self.curr_dist)
     # XXX
-    self.loss = tf.reduce_mean(-self.ratio * self.advantages + 1e-4 * self.kl)
+    self.loss = tf.reduce_mean(-self.ratio * self.advantages + config["klcoeff"] * self.kl)
     tf.summary.scalar("loss", self.loss)
     self.sess = sess
 
