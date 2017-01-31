@@ -20,6 +20,7 @@ class VisionPolicy(object):
     # Make loss functions.
     self.ratio = tf.exp(self.curr_dist.logp(self.actions) - self.prev_dist.logp(self.actions))
     self.kl = self.prev_dist.kl(self.curr_dist)
+    self.mean_kl = tf.reduce_mean(self.kl)
     # XXX
     self.loss = tf.reduce_mean(-self.ratio * self.advantages + config["kl_coeff"] * self.kl)
     tf.summary.scalar("loss", self.loss)
