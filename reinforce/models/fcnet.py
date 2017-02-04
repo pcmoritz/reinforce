@@ -14,5 +14,6 @@ def fc_net(inputs, num_classes=10):
   # fc1 = slim.fully_connected(inputs, 128, weights_initializer=normc_initializer(1.0), scope="fc1")
   fc1 = slim.fully_connected(inputs, 128, scope="fc1")
   fc2 = slim.fully_connected(fc1, 128, scope="fc2")
-  fc3 = slim.fully_connected(fc2, num_classes, weights_initializer=normc_initializer(0.01), scope="fc3")
-  return fc3
+  fc3 = slim.fully_connected(fc2, 128, scope="fc3")
+  fc4 = slim.fully_connected(fc3, num_classes, weights_initializer=normc_initializer(0.01), scope="fc4")
+  return fc4
