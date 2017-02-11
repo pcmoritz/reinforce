@@ -1,12 +1,13 @@
 import numpy as np
 
-def rollout(policy, env, max_timesteps, stochastic=True):
+def rollout(policy, env, max_timesteps, observation_filter=lambda obs: obs, reward_filter=lambda rew: rew, stochastic=True):
   observation = env.reset()
   done = np.array(env.batchsize * [False])
   t = 0
 
   observations = []
   rewards = []
+  unfiltered_rewards = []
   actions = []
   logprobs = []
   dones = []
@@ -17,10 +18,13 @@ def rollout(policy, env, max_timesteps, stochastic=True):
     actions.append(action[None])
     logprobs.append(logprob[None])
     observation, reward, done = env.step(action)
-    rewards.append(reward[None])
+    observation = observation_filter(observation)
+    unfiltered_rewards.append(reward[None])
+    rewards.append(reward_filter(reward)[None])
     t += 1
 
   return {"observations": np.vstack(observations),
+          "unfiltered_rewards": np.vstack(unfiltered_rewards),
           "rewards": np.vstack(rewards),
           "actions": np.vstack(actions),
           "logprobs": np.vstack(logprobs)}
