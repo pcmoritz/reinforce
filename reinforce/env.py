@@ -23,15 +23,20 @@ class BatchedEnv(object):
 
   def reset(self):
     observations = [self.preprocessor(env.reset()) for env in self.envs]
+    self.shape = observations[0].shape
+    self.dones = [False for _ in range(self.batchsize)]
     return np.vstack(observations)
 
   def step(self, actions):
     observations = []
     rewards = []
-    dones = []
     for i, action in enumerate(actions):
-      observation, reward, done, info = self.envs[i].step(action)
+      if self.dones[i]:
+        observations.append(np.zeros(self.shape))
+        rewards.append(0.0)
+        continue
+      observation, reward, done, info = self.envs[i].step(action[0])
       observations.append(self.preprocessor(observation))
       rewards.append(reward)
-      dones.append(done)
-    return np.vstack(observations), np.array(rewards, dtype="float32"), np.array(dones)
+      self.dones[i] = done
+    return np.vstack(observations), np.array(rewards, dtype="float32"), np.array(self.dones)

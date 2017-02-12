@@ -5,15 +5,15 @@ from reinforce.rollout import rollout, add_advantage_values
 from reinforce.filter import MeanStdFilter
 from reinforce.utils import flatten, iterate
 
-config = {"kl_coeff": 1.0,
+config = {"kl_coeff": 0.1,
           "num_sgd_iter": 20,
-          "sgd_stepsize": 5e-5,
+          "sgd_stepsize": 2e-5,
           "sgd_batchsize": 128,
           "entropy_coeff": 0.0,
-          "clip_param": 1.0,
-          "kl_target": 0.01}
+          "clip_param": 0.5,
+          "kl_target": 0.001}
 
-env = BatchedEnv("Hopper-v1", 512, preprocessor=None)
+env = BatchedEnv("CartPole-v0", 64, preprocessor=None)
 sess = tf.Session()
 ppo = ProximalPolicyLoss(env.observation_space, env.action_space, config, sess)
 
@@ -42,6 +42,8 @@ for j in range(1000):
   print("Computing policy (optimizer='" + optimizer.get_name() + "', iterations=" + str(config["num_sgd_iter"]) + ", stepsize=" + str(config["sgd_stepsize"]) + "):")
   names = ["iter", "loss", "kl", "entropy"]
   print(("{:>15}" * len(names)).format(*names))
+  # import IPython
+  # IPython.embed()
   for i in range(config["num_sgd_iter"]):
     # Test on current set of rollouts
     loss, kl, entropy = sess.run([ppo.loss, ppo.mean_kl, ppo.mean_entropy],
