@@ -6,8 +6,15 @@ def flatten(weights, start=0, stop=2):
     weights[key] = val.reshape(dims)
   return weights
 
+def concatenate(weights_list):
+  keys = weights_list[0].keys()
+  result = {}
+  for key in keys:
+    result[key] = np.concatenate([l[key] for l in weights_list])
+  return result
+
 def shuffle(trajectory):
-  permutation = np.random.permutation(trajectory["rewards"].shape[0])
+  permutation = np.random.permutation(trajectory["dones"].shape[0])
   for key, val in trajectory.items():
     trajectory[key] = val[permutation][permutation]
   return trajectory
@@ -16,7 +23,7 @@ def iterate(trajectory, batchsize):
   trajectory = shuffle(trajectory)
   curr_index = 0
   # XXX consume the whole batch
-  while curr_index + batchsize < trajectory["rewards"].shape[0]:
+  while curr_index + batchsize < trajectory["dones"].shape[0]:
     batch = dict()
     for key in trajectory:
       batch[key] = trajectory[key][curr_index:curr_index+batchsize]

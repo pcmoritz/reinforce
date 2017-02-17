@@ -1,5 +1,13 @@
 import numpy as np
 
+class NoFilter(object):
+
+  def __init__(self):
+    pass
+
+  def __call__(self, x, update=True):
+    return np.asarray(x)
+
 # http://www.johndcook.com/blog/standard_deviation/
 class RunningStat(object):
 

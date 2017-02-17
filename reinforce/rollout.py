@@ -1,39 +1,58 @@
 import numpy as np
 
-def rollout(policy, env, max_timesteps, observation_filter=lambda obs: obs, reward_filter=lambda rew: rew, stochastic=True):
-  observation = env.reset()
+from reinforce.filter import NoFilter
+from reinforce.utils import flatten, concatenate
+
+def rollouts(policy, env, horizon, observation_filter=NoFilter(), reward_filter=NoFilter()):
+  """Perform a batch of rollouts of a policy in an environment.
+
+  Args:
+    policy: The policy that will be rollout out. Can be an arbitrary object
+      that supports a compute_actions(observation) function.
+    env: The environment the rollout is computed in. Needs to support the
+      OpenAI gym API and needs to support batches of data.
+    horizon: Upper bound for the number of timesteps for each rollout in the
+      batch.
+    observation_filter: Function that is applied to each of the observations.
+    reward_filter: Function that is applied to each of the rewards.
+
+  Returns:
+    A trajectory, which is a dictionary with keys "observations", "rewards",
+    "orig_rewards", "actions", "logprobs", "dones". Each value is an array of
+    shape (num_timesteps, env.batchsize, shape).
+  """
+
+  observation = observation_filter(env.reset())
   done = np.array(env.batchsize * [False])
   t = 0
-
   observations = []
-  rewards = []
-  unfiltered_rewards = []
+  raw_rewards = [] # Empirical rewards
+  filt_rewards = [] # Filtered rewards
   actions = []
   logprobs = []
   dones = []
 
-  while not done.all() and t < max_timesteps:
+  while not done.all() and t < horizon:
     action, logprob = policy.compute_actions(observation)
     observations.append(observation[None])
     actions.append(action[None])
     logprobs.append(logprob[None])
-    observation, reward, done = env.step(action)
+    observation, raw_reward, done = env.step(action)
     observation = observation_filter(observation)
-    unfiltered_rewards.append(reward[None])
-    # rewards.append(reward_filter(reward)[None])
-    rewards.append(reward[None])
+    raw_rewards.append(raw_reward[None])
+    filt_rewards.append(reward_filter(raw_reward, update=False)[None])
     dones.append(done[None])
     t += 1
 
   return {"observations": np.vstack(observations),
-          "unfiltered_rewards": np.vstack(unfiltered_rewards),
-          "rewards": np.vstack(rewards),
+          "raw_rewards": np.vstack(raw_rewards),
+          "filt_rewards": np.vstack(filt_rewards),
           "actions": np.vstack(actions),
           "logprobs": np.vstack(logprobs),
           "dones": np.vstack(dones)}
 
-def add_advantage_values(trajectory, gamma, lam):
-  rewards = trajectory["rewards"]
+def add_advantage_values(trajectory, gamma, lam, reward_filter):
+  rewards = trajectory["filt_rewards"]
   dones = trajectory["dones"]
   advantages = np.zeros_like(rewards)
   last_advantage = np.zeros(rewards.shape[1], dtype="float32")
@@ -42,5 +61,24 @@ def add_advantage_values(trajectory, gamma, lam):
     delta = rewards[t,:] * (1 - dones[t,:])
     last_advantage = delta + gamma * lam * last_advantage
     advantages[t,:] = last_advantage
+    # Update the reward filter
+    reward_filter(advantages[t,:])
 
   trajectory["advantages"] = advantages
+
+def collect_samples(num_timesteps, gamma, lam, policy, env, horizon, observation_filter=NoFilter(), reward_filter=NoFilter()):
+  num_timesteps_so_far = 0
+  trajectories = []
+  total_rewards = []
+  traj_len_means = []
+  while num_timesteps_so_far < num_timesteps:
+    trajectory = rollouts(policy, env, horizon, observation_filter, reward_filter)
+    total_rewards.append(trajectory["raw_rewards"].sum(axis=0).mean())
+    add_advantage_values(trajectory, gamma, lam, reward_filter)
+    trajectory = flatten(trajectory)
+    not_done = np.logical_not(trajectory["dones"])
+    traj_len_means.append(not_done.sum(axis=0).mean())
+    trajectory = {key: val[not_done] for key, val in trajectory.items()}
+    num_timesteps_so_far += len(trajectory["dones"])
+    trajectories.append(trajectory)
+  return concatenate(trajectories), np.mean(total_rewards), np.mean(traj_len_means)

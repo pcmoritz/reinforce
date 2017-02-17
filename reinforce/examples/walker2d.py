@@ -1,19 +1,20 @@
 import tensorflow as tf
 from reinforce.env import BatchedEnv, atari_preprocessor, ram_preprocessor
 from reinforce.policy import ProximalPolicyLoss
-from reinforce.rollout import rollout, add_advantage_values
+from reinforce.rollout import rollouts, add_advantage_values, collect_samples
 from reinforce.filter import MeanStdFilter
-from reinforce.utils import flatten, iterate
+from reinforce.utils import iterate
 
-config = {"kl_coeff": 0.1,
-          "num_sgd_iter": 20,
-          "sgd_stepsize": 2e-5,
+config = {"kl_coeff": 0.2,
+          "num_sgd_iter": 30,
+          "sgd_stepsize": 5e-5,
           "sgd_batchsize": 128,
           "entropy_coeff": 0.0,
-          "clip_param": 0.5,
-          "kl_target": 0.001}
+          "clip_param": 0.3,
+          "kl_target": 0.02,
+          "timesteps_per_batch": 10000}
 
-env = BatchedEnv("CartPole-v0", 64, preprocessor=None)
+env = BatchedEnv("Hopper-v1", 1, preprocessor=None)
 sess = tf.Session()
 ppo = ProximalPolicyLoss(env.observation_space, env.action_space, config, sess)
 
@@ -26,17 +27,15 @@ sess.run(tf.global_variables_initializer())
 kl_coeff = config["kl_coeff"]
 
 observation_filter = MeanStdFilter(env.observation_space.shape)
-reward_filter = MeanStdFilter(())
+reward_filter = MeanStdFilter((), clip=5.0)
 
 for j in range(1000):
   print("iteration = ", j)
-  trajectory = rollout(ppo, env, 5000, observation_filter, reward_filter)
-  total_reward = trajectory["unfiltered_rewards"].sum(axis=0).mean()
+  trajectory, total_reward, traj_len_mean = collect_samples(config["timesteps_per_batch"], 0.995, 0.95, ppo, env, 1000, observation_filter, reward_filter)
   print("total reward is ", total_reward)
-  add_advantage_values(trajectory, 0.995, 0.95)
-  trajectory = flatten(trajectory)
-  print("timesteps: ", trajectory["rewards"].shape[0])
-  # print("mean state: ", trajectory["observations"].mean(axis=0))
+  print("trajectory length mean is ", traj_len_mean)
+  print("timesteps: ", trajectory["dones"].shape[0])
+  print("mean state: ", trajectory["observations"].mean(axis=0))
   print("filter mean: ", observation_filter.rs.mean)
   trajectory["advantages"] = (trajectory["advantages"] - trajectory["advantages"].mean()) / trajectory["advantages"].std()
   print("Computing policy (optimizer='" + optimizer.get_name() + "', iterations=" + str(config["num_sgd_iter"]) + ", stepsize=" + str(config["sgd_stepsize"]) + "):")
