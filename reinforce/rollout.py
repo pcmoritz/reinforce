@@ -105,7 +105,7 @@ def collect_samples(agents, num_timesteps, gamma, lam, horizon, observation_filt
     # except:
     #   import IPython
     #   IPython.embed()
-    total_rewards.append(trajectory["raw_rewards"].sum(axis=0).mean())
+    total_rewards.append(trajectory["raw_rewards"].sum(axis=0).mean() / len(agents))
     # print("mean", reward_filter.rs.mean)
     # print("std", reward_filter.rs.std)
     # print("raw_rewards", trajectory["raw_rewards"])
@@ -115,7 +115,7 @@ def collect_samples(agents, num_timesteps, gamma, lam, horizon, observation_filt
     # IPython.embed()
     trajectory = flatten(trajectory)
     not_done = np.logical_not(trajectory["dones"])
-    traj_len_means.append(not_done.sum(axis=0).mean())
+    traj_len_means.append(not_done.sum(axis=0).mean() / len(agents))
     trajectory = {key: val[not_done] for key, val in trajectory.items()}
     num_timesteps_so_far += len(trajectory["dones"])
     trajectories.append(trajectory)

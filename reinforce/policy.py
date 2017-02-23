@@ -21,13 +21,15 @@ class ProximalPolicyLoss(object):
       self.action_dim = 2 * action_space.shape[0]
       self.actions = tf.placeholder(tf.float32, shape=(None, action_space.shape[0]))
     elif isinstance(action_space, gym.spaces.Discrete):
+      print("action_dim", action_space.n)
       self.action_dim = action_space.n
+      self.actions = tf.placeholder(tf.int64, shape=(None,))
     else:
       raise NotImplemented("action space" + str(type(env.action_space)) + "currently not supported")
     self.prev_logits = tf.placeholder(tf.float32, shape=(None, self.action_dim))
-    self.prev_dist = DiagGaussian(self.prev_logits)
-    self.curr_logits = fc_net(self.observations, num_classes=self.action_dim//2)
-    self.curr_dist = DiagGaussian(self.curr_logits)
+    self.prev_dist = Categorical(self.prev_logits)
+    self.curr_logits = fc_net(self.observations, num_classes=self.action_dim)
+    self.curr_dist = Categorical(self.curr_logits)
     self.sampler = self.curr_dist.sample()
     self.entropy = self.curr_dist.entropy()
     # Make loss functions.
