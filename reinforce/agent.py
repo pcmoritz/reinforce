@@ -1,4 +1,5 @@
 import tensorflow as tf
+import os
 
 import ray
 
@@ -9,7 +10,9 @@ from reinforce.rollout import rollouts, add_advantage_values
 
 class Agent(object):
 
-  def __init__(self, name, batchsize, config):
+  def __init__(self, name, batchsize, config, use_gpu):
+    if not use_gpu:
+      os.environ["CUDA_VISIBLE_DEVICES"]=""
     self.env = BatchedEnv(name, batchsize, preprocessor=None)
     self.sess = tf.Session()
     self.ppo = ProximalPolicyLoss(self.env.observation_space, self.env.action_space, config, self.sess)
