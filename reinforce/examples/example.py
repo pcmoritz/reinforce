@@ -15,8 +15,8 @@ config = {"kl_coeff": 0.2,
 
 ray.init()
 
-agents = [RemoteAgent("Pong-ramDeterministic-v3", 1, config) for _ in range(5)]
-agent = Agent("Pong-ramDeterministic-v3", 1, config)
+agents = [RemoteAgent("Pong-ramDeterministic-v3", 1, config, False) for _ in range(5)]
+agent = Agent("Pong-ramDeterministic-v3", 1, config, True)
 
 kl_coeff = config["kl_coeff"]
 
