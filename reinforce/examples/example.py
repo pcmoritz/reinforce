@@ -15,19 +15,22 @@ config = {"kl_coeff": 0.2,
 
 ray.init()
 
-agents = [RemoteAgent("Pong-ramDeterministic-v3", 1, config, False) for _ in range(5)]
-agent = Agent("Pong-ramDeterministic-v3", 1, config, True)
+# mdp_name = "Walker2d-v1"
+mdp_name = "Pong-ramDeterministic-v3"
+
+agents = [RemoteAgent(mdp_name, 1, config, False) for _ in range(5)]
+agent = Agent(mdp_name, 1, config, True)
 
 kl_coeff = config["kl_coeff"]
 
 for j in range(1000):
+  print("== iteration", j)
   weights = agent.get_weights()
   [agent.load_weights(weights) for agent in agents]
   trajectory, total_reward, traj_len_mean = collect_samples(agents, config["timesteps_per_batch"], 0.995, 1.0, 2000)
   print("total reward is ", total_reward)
   print("trajectory length mean is ", traj_len_mean)
   print("timesteps: ", trajectory["dones"].shape[0])
-  print("mean state: ", trajectory["observations"].mean(axis=0))
   # print("filter mean: ", observation_filter.rs.mean)
   trajectory["advantages"] = (trajectory["advantages"] - trajectory["advantages"].mean()) / trajectory["advantages"].std()
   print("Computing policy (optimizer='" + agent.optimizer.get_name() + "', iterations=" + str(config["num_sgd_iter"]) + ", stepsize=" + str(config["sgd_stepsize"]) + "):")

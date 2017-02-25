@@ -18,18 +18,21 @@ class ProximalPolicyLoss(object):
 
     if isinstance(action_space, gym.spaces.Box):
       # First half of the dimensions are the means, the second half are the standard deviations
-      self.action_dim = 2 * action_space.shape[0]
+      self.action_dim = action_space.shape[0]
+      self.logit_dim = 2 * self.action_dim
       self.actions = tf.placeholder(tf.float32, shape=(None, action_space.shape[0]))
+      Distribution = DiagGaussian
     elif isinstance(action_space, gym.spaces.Discrete):
-      print("action_dim", action_space.n)
       self.action_dim = action_space.n
+      self.logit_dim = self.action_dim
       self.actions = tf.placeholder(tf.int64, shape=(None,))
+      Distribution = Categorical
     else:
       raise NotImplemented("action space" + str(type(env.action_space)) + "currently not supported")
-    self.prev_logits = tf.placeholder(tf.float32, shape=(None, self.action_dim))
-    self.prev_dist = Categorical(self.prev_logits)
-    self.curr_logits = fc_net(self.observations, num_classes=self.action_dim)
-    self.curr_dist = Categorical(self.curr_logits)
+    self.prev_logits = tf.placeholder(tf.float32, shape=(None, self.logit_dim))
+    self.prev_dist = Distribution(self.prev_logits)
+    self.curr_logits = fc_net(self.observations, num_classes=self.logit_dim)
+    self.curr_dist = Distribution(self.curr_logits)
     self.sampler = self.curr_dist.sample()
     self.entropy = self.curr_dist.entropy()
     # Make loss functions.
