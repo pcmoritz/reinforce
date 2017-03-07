@@ -5,8 +5,6 @@ from reinforce.models.visionnet import vision_net
 from reinforce.models.fcnet import fc_net
 from reinforce.distributions import Categorical, DiagGaussian
 
-# TODO(pcm): Substract baseline, try trick from stochastic approximation
-
 class ProximalPolicyLoss(object):
 
   def __init__(self, observation_space, action_space, config, sess):
@@ -52,7 +50,4 @@ class ProximalPolicyLoss(object):
 
   def loss(self):
     return self.loss
-
-  def compute_kl(self, observations, prev_logits):
-    return self.sess.run(tf.reduce_mean(self.kl), feed_dict={self.observations: observations,
                                                              self.prev_logits: prev_logits})

@@ -11,7 +11,6 @@ def normc_initializer(std=1.0):
     return _initializer
 
 def fc_net(inputs, num_classes=10, logstd=False):
-  # fc1 = slim.fully_connected(inputs, 128, weights_initializer=normc_initializer(1.0), scope="fc1")
   fc1 = slim.fully_connected(inputs, 128, weights_initializer=normc_initializer(1.0), scope="fc1")
   fc2 = slim.fully_connected(fc1, 128, weights_initializer=normc_initializer(1.0), scope="fc2")
   fc3 = slim.fully_connected(fc2, 128, weights_initializer=normc_initializer(1.0), scope="fc3")

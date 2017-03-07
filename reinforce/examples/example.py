@@ -31,7 +31,6 @@ for j in range(1000):
   print("total reward is ", total_reward)
   print("trajectory length mean is ", traj_len_mean)
   print("timesteps: ", trajectory["dones"].shape[0])
-  # print("filter mean: ", observation_filter.rs.mean)
   trajectory["advantages"] = (trajectory["advantages"] - trajectory["advantages"].mean()) / trajectory["advantages"].std()
   print("Computing policy (optimizer='" + agent.optimizer.get_name() + "', iterations=" + str(config["num_sgd_iter"]) + ", stepsize=" + str(config["sgd_stepsize"]) + "):")
   names = ["iter", "loss", "kl", "entropy"]

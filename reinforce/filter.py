@@ -78,7 +78,6 @@ class MeanStdFilter(object):
   def __call__(self, x, update=True):
     x = np.asarray(x)
     if update:
-      # print("updating with", x)
       if len(x.shape) == len(self.rs.shape) + 1:
         # The vectorized case.
         for i in range(x.shape[0]):

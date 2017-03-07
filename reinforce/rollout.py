@@ -40,11 +40,6 @@ def rollouts(policy, env, horizon, observation_filter=NoFilter(), reward_filter=
     observation, raw_reward, done = env.step(action)
     observation = observation_filter(observation)
     raw_rewards.append(raw_reward[None])
-    # if reward_filter.rs._n > 500:
-    #   filt_rewards.append(reward_filter(raw_reward, update=False)[None])
-    # else:
-    #   print("raw_reward is ", raw_reward)
-    #   filt_rewards.append(raw_reward - raw_reward.mean(axis=0))
     dones.append(done[None])
     t += 1
 
@@ -55,34 +50,15 @@ def rollouts(policy, env, horizon, observation_filter=NoFilter(), reward_filter=
           "dones": np.vstack(dones)}
 
 def add_advantage_values(trajectory, gamma, lam, reward_filter):
-  # Compute filtered rewards
-  raw_rewards = trajectory["raw_rewards"]
-  # filt_rewards = trajectory["filt_rewards"] = np.zeros_like(raw_rewards)
-  # if reward_filter.rs._n < 200:
-  #   # We have collected an insufficient number of observations so far,
-  #   # so we cannot use the reward filter
-  #   rew_mean = raw_rewards.mean(axis=0)
-  #   rew_std = raw_rewards.std(axis=0)
-  #   for i in range(raw_rewards.shape[0]):
-  #     filt_rewards[i] = (raw_rewards[i] - rew_mean) / rew_std
-  # else:
-  #   for i in range(raw_rewards.shape[0]):
-  #     filt_rewards[i] = reward_filter(raw_rewards[i])
-  trajectory["filt_rewards"] = raw_rewards
-
-  filt_rewards = trajectory["filt_rewards"]
-  # print("filt_rewards", filt_rewards)
+  rewards = trajectory["raw_rewards"]
   dones = trajectory["dones"]
-  advantages = np.zeros_like(filt_rewards)
-  last_advantage = np.zeros(filt_rewards.shape[1], dtype="float32")
+  advantages = np.zeros_like(rewards)
+  last_advantage = np.zeros(rewards.shape[1], dtype="float32")
 
   for t in reversed(range(len(filt_rewards))):
-    delta = filt_rewards[t,:] * (1 - dones[t,:])
+    delta = rewards[t,:] * (1 - dones[t,:])
     last_advantage = delta + gamma * lam * last_advantage
-    # print("last_advantage is ", last_advantage)
     advantages[t,:] = last_advantage
-    # Update the reward filter
-    # print("advantages", advantages[t,:])
     reward_filter(advantages[t,:])
 
   trajectory["advantages"] = advantages
@@ -100,19 +76,8 @@ def collect_samples(agents, num_timesteps, gamma, lam, horizon, observation_filt
   traj_len_means = []
   while num_timesteps_so_far < num_timesteps:
     trajectory_batch = ray.get([agent.compute_trajectory(gamma, lam, horizon) for agent in agents])
-    # try:
     trajectory = concatenate(trajectory_batch)
-    # except:
-    #   import IPython
-    #   IPython.embed()
     total_rewards.append(trajectory["raw_rewards"].sum(axis=0).mean() / len(agents))
-    # print("mean", reward_filter.rs.mean)
-    # print("std", reward_filter.rs.std)
-    # print("raw_rewards", trajectory["raw_rewards"])
-    # print("filt_rewards", trajectory["filt_rewards"])
-    # print("")
-    # import IPython
-    # IPython.embed()
     trajectory = flatten(trajectory)
     not_done = np.logical_not(trajectory["dones"])
     traj_len_means.append(not_done.sum(axis=0).mean() / len(agents))

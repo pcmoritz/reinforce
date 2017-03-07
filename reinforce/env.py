@@ -1,8 +1,6 @@
 import gym
 import numpy as np
 
-# TODO(pcm): Make this a class and provide a method that transforms
-# observation_space in the environment.
 def atari_preprocessor(observation):
   "Convert images from (210, 160, 3) to (3, 80, 80) by downsampling."
   return (observation[25:-25:2,::2,:][None] - 128.0) / 128.8
@@ -10,7 +8,6 @@ def atari_preprocessor(observation):
 def ram_preprocessor(observation):
   return (observation - 128.0) / 128.0
 
-# TODO(pcm): Make this a Ray actor.
 class BatchedEnv(object):
   "A BatchedEnv holds multiple gym enviroments and performs steps on all of them."
 
